@@ -28,11 +28,8 @@ async def create_warehouse(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ErrorResponse(error="ServerError", message=str(e)).model_dump())
 
-@router.get(
-    "/",
-    response_model=List[WarehouseResponse],
-    responses={500: {"model": ErrorResponse}}
-)
+@router.get("")
+@router.get("/")
 async def list_warehouses(
     request: Request,
     warehouse_service: WarehouseService = Depends()
