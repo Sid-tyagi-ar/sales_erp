@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.cors import CORSMiddleware # Import CORSMiddleware
 from app.config import settings
 from app.middleware.tenant import TenantMiddleware
 from app.routes import tenant, product, warehouse, customer, bom, purchase_receipt, manufacturing_order, sales_order, inventory, ledger, audit # Import audit router
@@ -7,6 +8,15 @@ from app.routes import tenant, product, warehouse, customer, bom, purchase_recei
 app = FastAPI(
     title="Manufacturing ERP API",
     redirect_slashes=False # Fix 1: Disable automatic trailing slash redirection
+)
+
+# Add CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Temporarily allow all origins for testing
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Add Tenant Middleware
