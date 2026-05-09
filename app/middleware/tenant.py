@@ -18,6 +18,11 @@ class TenantMiddleware(BaseHTTPMiddleware):
             f"tenant: {tenant_header}"
         )
 
+        # Fix: Bypass tenant validation for OPTIONS preflight requests
+        if request.method == "OPTIONS":
+            logger.debug(f"Bypassing X-Tenant-ID validation for OPTIONS request: {request.url.path}")
+            return await call_next(request)
+
         # Check if the path should be skipped
         if (
             request.url.path == "/health"
