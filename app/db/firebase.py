@@ -12,18 +12,18 @@ def initialize_firebase():
     """Initializes Firebase Admin SDK if not already initialized."""
     global _db_client
     if _db_client is None:
-        firebase_credentials_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
+        cred_dict = json.loads(settings.FIREBASE_CREDENTIALS_JSON)
         firebase_project_id = os.getenv("FIREBASE_PROJECT_ID") # Get project ID
 
-        if not firebase_credentials_path:
+        if not cred_dict:
             raise ValueError("FIREBASE_CREDENTIALS_PATH environment variable not set.")
         if not firebase_project_id:
             raise ValueError("FIREBASE_PROJECT_ID environment variable not set.")
         
-        if not os.path.exists(firebase_credentials_path):
-            raise FileNotFoundError(f"Firebase credentials file not found at: {firebase_credentials_path}")
+        # if not os.path.exists(firebase_credentials_path):
+        #     raise FileNotFoundError(f"Firebase credentials file not found at: {firebase_credentials_path}")
 
-        cred = credentials.Certificate(firebase_credentials_path)
+        cred = credentials.Certificate(cred_dict)
         
         # Initialize the default app
         # It's good practice to initialize the app once, and then get the client from it.
