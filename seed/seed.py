@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 # Load environment variables from .env file
 load_dotenv()
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://saleserp-production-e9b3.up.railway.app"
 
 async def post(client: httpx.AsyncClient, path: str, body: Dict, tenant_id: Optional[str] = None) -> Dict:
   headers = {}

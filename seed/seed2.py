@@ -1,522 +1,350 @@
-import httpx
 import asyncio
-from typing import Dict, Any, Optional
+import uuid
+import httpx
 
 BASE_URL = "https://saleserp-production-e9b3.up.railway.app"
 
+RUN_ID = str(uuid.uuid4())[:8]
+RUN_ID_UPPER = RUN_ID.upper()
 
-async def post(
-    client: httpx.AsyncClient,
-    path: str,
-    body: Dict,
-    tenant_id: Optional[str] = None
-) -> Dict:
+ALPHA_NAME = f"Orion Forge {RUN_ID_UPPER}"
+BETA_NAME = f"Nebula Works {RUN_ID_UPPER}"
+
+ALPHA_EMAIL = f"orion_{RUN_ID}@erp.com"
+BETA_EMAIL = f"nebula_{RUN_ID}@erp.com"
+
+SO_NUMBER = f"SO-{RUN_ID_UPPER}"
+
+RM_TI_SKU = f"RM-TI-{RUN_ID_UPPER}"
+RM_SERVO_SKU = f"RM-SERVO-{RUN_ID_UPPER}"
+RM_SENSOR_SKU = f"RM-SENSOR-{RUN_ID_UPPER}"
+FG_SKU = f"FG-AWR-{RUN_ID_UPPER}"
+
+print("\n====================================")
+print(" SALES ERP LIVE VALIDATION SEED ")
+print("====================================\n")
+
+
+async def post(client, path, body, tenant_id=None):
     headers = {}
 
     if tenant_id:
         headers["X-Tenant-ID"] = tenant_id
 
-    response = await client.post(
+    r = await client.post(
         f"{BASE_URL}{path}",
         json=body,
         headers=headers
     )
 
-    if response.status_code not in [200, 201]:
-        print(f"\n✗ FAILED POST {path}")
-        print(f"Status: {response.status_code}")
-        print(f"Body: {response.text}")
+    print(f"POST {path} -> {r.status_code}")
+
+    if r.status_code not in [200, 201]:
+        print(r.text)
         raise Exception(f"POST failed: {path}")
 
-    print(f"✓ POST {path}")
-    return response.json()
+    return r.json()
 
 
-async def get(
-    client: httpx.AsyncClient,
-    path: str,
-    tenant_id: Optional[str] = None
-) -> Any:
+async def get(client, path, tenant_id=None):
     headers = {}
 
     if tenant_id:
         headers["X-Tenant-ID"] = tenant_id
 
-    response = await client.get(
+    r = await client.get(
         f"{BASE_URL}{path}",
         headers=headers
     )
 
-    if response.status_code != 200:
-        print(f"\n✗ FAILED GET {path}")
-        print(f"Status: {response.status_code}")
-        print(f"Body: {response.text}")
+    print(f"GET {path} -> {r.status_code}")
+
+    if r.status_code != 200:
+        print(r.text)
         raise Exception(f"GET failed: {path}")
 
-    print(f"✓ GET {path}")
-    return response.json()
+    return r.json()
 
 
-async def seed():
-
-    async with httpx.AsyncClient(
-        timeout=60,
-        follow_redirects=True
-    ) as client:
-
-        print("\n==============================")
-        print("SEED V2 STARTING")
-        print("==============================")
-
-        # -------------------------------
-        # HEALTH CHECK
-        # -------------------------------
+async def main():
+    async with httpx.AsyncClient(timeout=60) as client:
 
         print("\n── Health Check ──")
 
-        try:
-            health = await get(client, "/health")
-            print(f"Server Status: {health}")
-        except:
-            print("Health endpoint missing, continuing...")
-
-
-        # -------------------------------
-        # CREATE TENANTS
-        # -------------------------------
+        health = await get(client, "/health")
+        print("Server:", health)
 
         print("\n── Create Tenants ──")
 
-        tenant_orion = await post(
+        alpha = await post(
             client,
             "/tenants",
             {
-                "name": "Tenant Orion Manufacturing",
-                "email": "orion.manufacturing@erp.com"
+                "name": ALPHA_NAME,
+                "email": ALPHA_EMAIL
             }
         )
 
-        tenant_nova = await post(
+        beta = await post(
             client,
             "/tenants",
             {
-                "name": "Tenant Nova Industries",
-                "email": "nova.industries@erp.com"
+                "name": BETA_NAME,
+                "email": BETA_EMAIL
             }
         )
 
-        orion_id = tenant_orion["id"]
-        nova_id = tenant_nova["id"]
+        alpha_tenant = alpha["id"]
+        beta_tenant = beta["id"]
 
-        print(f"Orion Tenant ID: {orion_id}")
-        print(f"Nova Tenant ID:  {nova_id}")
-
-
-        # -------------------------------
-        # CREATE WAREHOUSES
-        # -------------------------------
+        print("Alpha Tenant:", alpha_tenant)
+        print("Beta Tenant :", beta_tenant)
 
         print("\n── Create Warehouses ──")
 
-        # ORION
-
-        orion_main = await post(
+        alpha_wh = await post(
             client,
             "/warehouses",
             {
                 "name": "Orion Central Warehouse",
-                "code": "ORION-MAIN",
+                "code": f"ORION-{RUN_ID_UPPER}",
                 "city": "Bangalore"
             },
-            orion_id
+            alpha_tenant
         )
 
-        orion_sec = await post(
+        await post(
             client,
             "/warehouses",
             {
-                "name": "Orion Secondary Warehouse",
-                "code": "ORION-SEC",
-                "city": "Hyderabad"
-            },
-            orion_id
-        )
-
-        # NOVA
-
-        nova_main = await post(
-            client,
-            "/warehouses",
-            {
-                "name": "Nova Primary Hub",
-                "code": "NOVA-MAIN",
+                "name": "Nebula Operations Hub",
+                "code": f"NEBULA-{RUN_ID_UPPER}",
                 "city": "Pune"
             },
-            nova_id
+            beta_tenant
         )
 
-        nova_sec = await post(
-            client,
-            "/warehouses",
-            {
-                "name": "Nova Reserve Hub",
-                "code": "NOVA-SEC",
-                "city": "Chennai"
-            },
-            nova_id
-        )
-
-        print("Warehouses created.")
-
-
-        # -------------------------------
-        # CREATE PRODUCTS
-        # -------------------------------
+        alpha_wh_id = alpha_wh["id"]
 
         print("\n── Create Products ──")
 
         products = [
             {
                 "name": "Titanium Sheet",
-                "sku": "RM-TI-001",
+                "sku": RM_TI_SKU,
                 "type": "raw_material",
                 "unit_of_measure": "kg",
-                "standard_cost": 120.0,
-                "selling_price": 0.0,
+                "standard_cost": 120,
+                "selling_price": 0,
                 "sellable": False
             },
             {
                 "name": "Servo Motor",
-                "sku": "RM-SERVO-001",
+                "sku": RM_SERVO_SKU,
                 "type": "raw_material",
                 "unit_of_measure": "unit",
-                "standard_cost": 350.0,
-                "selling_price": 0.0,
+                "standard_cost": 500,
+                "selling_price": 0,
                 "sellable": False
             },
             {
-                "name": "Sensor Module",
-                "sku": "RM-SENSOR-001",
+                "name": "Precision Sensor",
+                "sku": RM_SENSOR_SKU,
                 "type": "raw_material",
                 "unit_of_measure": "unit",
-                "standard_cost": 180.0,
-                "selling_price": 0.0,
+                "standard_cost": 250,
+                "selling_price": 0,
                 "sellable": False
             },
             {
                 "name": "Autonomous Welding Robot",
-                "sku": "FG-AWR-001",
+                "sku": FG_SKU,
                 "type": "finished_good",
                 "unit_of_measure": "unit",
-                "standard_cost": 8500.0,
-                "selling_price": 12000.0,
-                "sellable": True
-            },
-            {
-                "name": "Industrial Laser Cutter",
-                "sku": "FG-LASER-001",
-                "type": "finished_good",
-                "unit_of_measure": "unit",
-                "standard_cost": 15000.0,
-                "selling_price": 21000.0,
-                "sellable": True
-            },
-            {
-                "name": "Factory Safety Helmet",
-                "sku": "TG-HELMET-001",
-                "type": "trading_good",
-                "unit_of_measure": "unit",
-                "standard_cost": 25.0,
-                "selling_price": 60.0,
+                "standard_cost": 12000,
+                "selling_price": 18000,
                 "sellable": True
             }
         ]
 
-        for product in products:
-            await post(client, "/products", product, orion_id)
+        for p in products:
+            await post(client, "/products", p, alpha_tenant)
 
-        for product in products:
-            await post(client, "/products", product, nova_id)
+        print("\n── Create Customer ──")
 
-        print("Products created.")
-
-
-        # -------------------------------
-        # CREATE CUSTOMERS
-        # -------------------------------
-
-        print("\n── Create Customers ──")
-
-        orion_customer = await post(
+        customer = await post(
             client,
             "/customers",
             {
                 "name": "Apex Robotics",
-                "email": "orders@apexrobotics.com",
-                "phone": "9999991111",
-                "address": "Electronic City, Bangalore"
+                "email": f"orders_{RUN_ID}@apexrobotics.com",
+                "phone": "9999999999",
+                "address": "Mumbai"
             },
-            orion_id
+            alpha_tenant
         )
 
-        nova_customer = await post(
+        print("\n── Purchase Receipt ──")
+
+        await post(
             client,
-            "/customers",
+            "/purchase-receipts",
             {
-                "name": "Titan Manufacturing",
-                "email": "procurement@titanmanufacturing.com",
-                "phone": "9999992222",
-                "address": "Industrial Area, Pune"
+                "warehouse_id": alpha_wh_id,
+                "items": [
+                    {
+                        "sku": RM_TI_SKU,
+                        "quantity": 200,
+                        "unit_cost": 120
+                    },
+                    {
+                        "sku": RM_SERVO_SKU,
+                        "quantity": 30,
+                        "unit_cost": 500
+                    },
+                    {
+                        "sku": RM_SENSOR_SKU,
+                        "quantity": 50,
+                        "unit_cost": 250
+                    }
+                ]
             },
-            nova_id
+            alpha_tenant
         )
-
-        print("Customers created.")
-
-
-        # -------------------------------
-        # PURCHASE RECEIPTS
-        # -------------------------------
-
-        print("\n── Purchase Receipts ──")
-
-        receipt_body = {
-            "warehouse_id": orion_main["id"],
-            "items": [
-                {
-                    "sku": "RM-TI-001",
-                    "quantity": 200,
-                    "unit_cost": 120.0
-                },
-                {
-                    "sku": "RM-SERVO-001",
-                    "quantity": 30,
-                    "unit_cost": 350.0
-                },
-                {
-                    "sku": "RM-SENSOR-001",
-                    "quantity": 50,
-                    "unit_cost": 180.0
-                }
-            ]
-        }
-
-        await post(
-            client,
-            "/purchase-receipts",
-            receipt_body,
-            orion_id
-        )
-
-        receipt_body["warehouse_id"] = nova_main["id"]
-
-        await post(
-            client,
-            "/purchase-receipts",
-            receipt_body,
-            nova_id
-        )
-
-        print("Purchase receipts completed.")
-
-
-        # -------------------------------
-        # CREATE BOM
-        # -------------------------------
 
         print("\n── Create BOM ──")
 
-        bom_body = {
-            "finished_good_sku": "FG-AWR-001",
-            "components": [
-                {
-                    "raw_material_sku": "RM-TI-001",
-                    "quantity_required": 8.0,
-                    "wastage_percent": 1.5
-                },
-                {
-                    "raw_material_sku": "RM-SERVO-001",
-                    "quantity_required": 2.0,
-                    "wastage_percent": 0.0
-                },
-                {
-                    "raw_material_sku": "RM-SENSOR-001",
-                    "quantity_required": 4.0,
-                    "wastage_percent": 0.0
-                }
-            ]
-        }
+        await post(
+            client,
+            "/bom",
+            {
+                "finished_good_sku": FG_SKU,
+                "components": [
+                    {
+                        "raw_material_sku": RM_TI_SKU,
+                        "quantity_required": 8,
+                        "wastage_percent": 1.5
+                    },
+                    {
+                        "raw_material_sku": RM_SERVO_SKU,
+                        "quantity_required": 2,
+                        "wastage_percent": 0
+                    },
+                    {
+                        "raw_material_sku": RM_SENSOR_SKU,
+                        "quantity_required": 4,
+                        "wastage_percent": 0
+                    }
+                ]
+            },
+            alpha_tenant
+        )
 
-        await post(client, "/bom", bom_body, orion_id)
-        await post(client, "/bom", bom_body, nova_id)
+        print("\n── Manufacturing Order ──")
 
-        print("BOM created.")
-
-
-        # -------------------------------
-        # MANUFACTURING
-        # -------------------------------
-
-        print("\n── Manufacturing Orders ──")
-
-        manufacturing_body = {
-            "warehouse_id": orion_main["id"],
-            "finished_good_sku": "FG-AWR-001",
-            "quantity_to_produce": 5
-        }
-
-        mfg_order = await post(
+        mfg = await post(
             client,
             "/manufacturing-orders",
-            manufacturing_body,
-            orion_id
+            {
+                "warehouse_id": alpha_wh_id,
+                "finished_good_sku": FG_SKU,
+                "quantity_to_produce": 5
+            },
+            alpha_tenant
         )
 
-        mfg_id = mfg_order["id"]
-
-        completion = await post(
+        await post(
             client,
-            f"/manufacturing-orders/{mfg_id}/complete",
+            f"/manufacturing-orders/{mfg['id']}/complete",
             {},
-            orion_id
+            alpha_tenant
         )
 
-        print("Manufacturing completed.")
-        print(completion)
-
-
-        # -------------------------------
-        # INVENTORY CHECK
-        # -------------------------------
-
-        print("\n── Inventory Check ──")
+        print("\n── Verify Inventory ──")
 
         inventory = await get(
             client,
             "/inventory",
-            orion_id
+            alpha_tenant
         )
 
         for item in inventory:
             print(
-                f"{item['sku']:20} | "
+                f"{item['sku']:25} | "
                 f"on_hand={item['on_hand_quantity']} | "
                 f"reserved={item['reserved_quantity']} | "
                 f"available={item['available_quantity']}"
             )
 
-
-        # -------------------------------
-        # SALES ORDER
-        # -------------------------------
-
         print("\n── Create Sales Order ──")
 
-        sales_order_body = {
-            "customer_id": orion_customer["id"],
-            "warehouse_id": orion_main["id"],
-            "order_number": "SO-2026-ORION-001",
-            "items": [
-                {
-                    "sku": "FG-AWR-001",
-                    "quantity": 3
-                }
-            ],
-            "tax_percent": 18.0
-        }
-
-        sales_order = await post(
+        so = await post(
             client,
             "/sales-orders",
-            sales_order_body,
-            orion_id
+            {
+                "customer_id": customer["id"],
+                "warehouse_id": alpha_wh_id,
+                "order_number": SO_NUMBER,
+                "items": [
+                    {
+                        "sku": FG_SKU,
+                        "quantity": 3
+                    }
+                ],
+                "tax_percent": 18
+            },
+            alpha_tenant
         )
-
-        so_id = sales_order["id"]
-
-        print("Sales order created.")
-
-
-        # -------------------------------
-        # CONFIRM SALES ORDER
-        # -------------------------------
 
         print("\n── Confirm Sales Order ──")
 
-        confirmation = await post(
+        confirm = await post(
             client,
-            f"/sales-orders/{so_id}/confirm",
+            f"/sales-orders/{so['id']}/confirm",
             {},
-            orion_id
+            alpha_tenant
         )
 
-        print("Sales order confirmed.")
-        print(confirmation)
-
-
-        # -------------------------------
-        # DISPATCH
-        # -------------------------------
+        print(confirm)
 
         print("\n── Dispatch Sales Order ──")
 
-        dispatch_body = {
-            "items": [
-                {
-                    "sku": "FG-AWR-001",
-                    "quantity": 3
-                }
-            ]
-        }
-
         dispatch = await post(
             client,
-            f"/sales-orders/{so_id}/dispatch",
-            dispatch_body,
-            orion_id
+            f"/sales-orders/{so['id']}/dispatch",
+            {
+                "items": [
+                    {
+                        "sku": FG_SKU,
+                        "quantity": 3
+                    }
+                ]
+            },
+            alpha_tenant
         )
 
-        print("Dispatch completed.")
         print(dispatch)
-
-
-        # -------------------------------
-        # STOCK LEDGER
-        # -------------------------------
 
         print("\n── Stock Ledger ──")
 
         ledger = await get(
             client,
             "/stock-ledger",
-            orion_id
+            alpha_tenant
         )
 
-        print(f"Total Ledger Entries: {len(ledger)}")
+        print("Total Ledger Entries:", len(ledger))
 
         for entry in ledger[:10]:
             print(
-                f"{entry['movement_type']:25} | "
-                f"{entry['product_sku']:20} | "
+                f"{entry['movement_type']:28} | "
+                f"{entry['product_sku']:25} | "
                 f"qty={entry['quantity_change']}"
             )
 
-
-        # -------------------------------
-        # FINAL SUCCESS
-        # -------------------------------
-
         print("\n====================================")
-        print("✓ SEED V2 COMPLETED SUCCESSFULLY")
-        print("====================================")
+        print(" LIVE ERP FLOW VERIFIED SUCCESSFULLY ")
+        print("====================================\n")
 
 
-if __name__ == "__main__":
-
-    print("\nLaunching Seed V2...\n")
-
-    try:
-        asyncio.run(seed())
-
-    except Exception as e:
-        print(f"\n✗ SEED FAILED: {e}")
+asyncio.run(main())
