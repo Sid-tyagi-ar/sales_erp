@@ -6,6 +6,9 @@ class TenantCreateRequest(BaseModel):
     name: str
     email: EmailStr
 
+class TenantUpdateRequest(BaseModel):
+    name: Optional[str] = None
+
 class TenantResponse(BaseModel):
     id: str
     name: str

@@ -17,11 +17,13 @@ class ShortageItem(BaseModel):
 class ManufacturingOrderResponse(BaseModel):
     id: str
     warehouse_id: str
+    finished_good_id: str # Added finished_good_id
     finished_good_sku: str
     quantity_to_produce: float
     status: ManufacturingStatus
     actual_cost: float
     created_at: datetime
+    completed_at: Optional[datetime] = None # Added for consistency with model
 
 class ManufacturingCompleteResponse(BaseModel):
     success: bool

@@ -2,9 +2,12 @@ from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import settings
 from app.middleware.tenant import TenantMiddleware
-from app.routes import tenant, product, warehouse, customer, bom, purchase_receipt, manufacturing_order, sales_order, inventory, ledger
+from app.routes import tenant, product, warehouse, customer, bom, purchase_receipt, manufacturing_order, sales_order, inventory, ledger, audit # Import audit router
 
-app = FastAPI(title="Manufacturing ERP API")
+app = FastAPI(
+    title="Manufacturing ERP API",
+    redirect_slashes=False # Fix 1: Disable automatic trailing slash redirection
+)
 
 # Add Tenant Middleware
 app.add_middleware(TenantMiddleware)
@@ -20,6 +23,7 @@ app.include_router(manufacturing_order.router)
 app.include_router(sales_order.router)
 app.include_router(inventory.router)
 app.include_router(ledger.router)
+app.include_router(audit.router) # Include audit router
 
 @app.get("/health", tags=["Health Check"])
 async def health_check():

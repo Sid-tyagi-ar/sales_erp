@@ -7,7 +7,7 @@ from app.services.warehouse_service import WarehouseService
 router = APIRouter(prefix="/warehouses", tags=["Warehouses"])
 
 @router.post(
-    "/",
+    "", # Changed from "/" to ""
     response_model=WarehouseResponse,
     status_code=status.HTTP_201_CREATED,
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}}
@@ -23,6 +23,8 @@ async def create_warehouse(
         return warehouse
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorResponse(error="ValueError", message=str(e)).model_dump())
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ErrorResponse(error="ServerError", message=str(e)).model_dump())
 
@@ -39,6 +41,8 @@ async def list_warehouses(
         tenant_id = request.state.tenant_id
         warehouses = await warehouse_service.list(tenant_id)
         return warehouses
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ErrorResponse(error="ServerError", message=str(e)).model_dump())
 

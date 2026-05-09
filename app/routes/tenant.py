@@ -6,7 +6,7 @@ from app.services.tenant_service import TenantService
 router = APIRouter(prefix="/tenants", tags=["Tenants"])
 
 @router.post(
-    "/",
+    "", # Changed from "/"
     response_model=TenantResponse,
     status_code=status.HTTP_201_CREATED,
     responses={400: {"model": ErrorResponse}}

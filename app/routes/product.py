@@ -7,7 +7,7 @@ from app.services.product_service import ProductService
 router = APIRouter(prefix="/products", tags=["Products"])
 
 @router.post(
-    "/",
+    "", # Changed from "/" to ""
     response_model=ProductResponse,
     status_code=status.HTTP_201_CREATED,
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}}
@@ -23,11 +23,13 @@ async def create_product(
         return product
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorResponse(error="ValueError", message=str(e)).model_dump())
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ErrorResponse(error="ServerError", message=str(e)).model_dump())
 
 @router.get(
-    "/",
+    "", # Changed from "/" to ""
     response_model=List[ProductResponse],
     responses={500: {"model": ErrorResponse}}
 )
@@ -39,6 +41,8 @@ async def list_products(
         tenant_id = request.state.tenant_id
         products = await product_service.list(tenant_id)
         return products
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ErrorResponse(error="ServerError", message=str(e)).model_dump())
 

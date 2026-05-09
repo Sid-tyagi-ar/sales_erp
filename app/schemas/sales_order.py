@@ -10,6 +10,7 @@ class SalesOrderItemRequest(BaseModel):
 class SalesOrderCreateRequest(BaseModel):
     customer_id: str
     order_number: str
+    warehouse_id: str # Added as per instruction
     items: List[SalesOrderItemRequest]
     tax_percent: float = Field(default=0.0, ge=0.0, le=100.0)
 
@@ -28,6 +29,7 @@ class DispatchRequest(BaseModel):
     items: List[DispatchItem]
 
 class SalesOrderItemResponse(BaseModel):
+    product_id: str # Added for internal use
     sku: str
     product_name: str
     quantity: float
@@ -40,6 +42,7 @@ class SalesOrderResponse(BaseModel):
     order_number: str
     customer_id: str
     customer_name: str
+    warehouse_id: str # Added for consistency
     status: OrderStatus
     items: List[SalesOrderItemResponse]
     subtotal: float
